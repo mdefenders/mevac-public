@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+import logging
+import os
+from mevaclibs.envs import LoadEnv, PushEnv
+from mevaclibs.importer import Importer
+from mevaclibs.pusher import Pusher
+import argparse
+
+
+def main():
+    logging.basicConfig(
+        level=os.environ.get('LOGLEVEL', 'INFO').upper()
+    )
+
+    parser = argparse.ArgumentParser(description='Import data from social media platforms.')
+    parser.add_argument('operation', choices=['load', 'push'], type=str, help='Command to execute')
+    parser.add_argument('type', choices=['facebook', 'twitter', 'report'], type=str, help='Data type')
+
+    args = parser.parse_args()
+    load_env = LoadEnv()
+    importer = Importer(load_env)
+
+    if args.operation == "load":
+
+        if args.type == "facebook":
+            importer.load_fb_posts()
+        elif args.type == "twitter":
+            pass
+        elif args.type == "report":
+            pass
+
+    if args.operation == "push":
+        if args.type == "facebook":
+            push_env = PushEnv()
+            pusher = Pusher(load_env, push_env)
+            pusher.push_fb_posts()
+        elif args.type == "twitter":
+            pass
+        elif args.type == "report":
+            pass
+    importer.collect_stat()
+    importer.print_stat()
+
+
+if __name__ == '__main__':
+    main()

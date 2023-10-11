@@ -1,0 +1,4 @@
+/.coverage
+/posts*
+/dist
+*.db
