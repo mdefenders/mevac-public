@@ -30,13 +30,14 @@ class Importer:
             logging.warning(f'Facebook post file not detected in {self._env.fb_posts_dir}')
         self._prepare_db()
 
-    def load_fb_posts(self):
+    def load_fb_posts(self, dry_run=True):
         c = self._conn.cursor()
         if self._facebook_post_file is None:
             raise Exception(f'Facebook post file not detected in {self._env.fb_posts_dir}')
         with open(f'{self._env.fb_posts_dir}/{self._facebook_post_file}') as fb_posts:
             self._posts = json.load(fb_posts)
-        i = 0
+        posts_count = 0
+        media_count = 0
         for post in self._posts:
             text = ''
             data = post.get('data')
@@ -46,17 +47,17 @@ class Importer:
                 text = data[0].get('post').encode('latin1').decode('utf8')
             attachments = post.get('attachments')
             if text != '' or attachments:
-                i += 1
+                posts_count += 1
                 try:
                     # process attachments
                     if attachments:
-                        m = 0
+                        post_media_count = 0
                         for attachment in attachments[0].get('data', []):
                             media = attachment.get('media')
                             link = attachment.get('external_context', {}).get('url', '')
                             # process photos and videos
                             if media:
-                                if m > 3:
+                                if post_media_count > 3:
                                     logging.warning(
                                         f'Post from {formatted_timestamp} '
                                         f'has more then 4 attachments, trimmed to 4')
@@ -64,9 +65,13 @@ class Importer:
                                 uri = media.get('uri').partition('posts/')[2]
                                 if uri:
                                     try:
-                                        c.execute('INSERT INTO fb_media (post_id, uri) VALUES (?, ?)',
-                                                  (timestamp, uri))
-                                        m += 1
+                                        logging.info(f'Dry-run {dry_run}. '
+                                                     f'Adding attachment {uri} to post from {formatted_timestamp}')
+                                        if not dry_run:
+                                            c.execute('INSERT INTO fb_media (post_id, uri) VALUES (?, ?)',
+                                                      (timestamp, uri))
+                                        media_count += 1
+                                        post_media_count += 1
                                     except sqlite3.IntegrityError:
                                         logging.warning(
                                             f'Attachment {uri} already exists')
@@ -75,14 +80,16 @@ class Importer:
                                 text += f'\n{link}'
                                 logging.warning(f'Added link {link} to post from {formatted_timestamp}')
                     # process post
-                    c.execute('INSERT INTO fb_posts (id, text) VALUES (?, ?)',
-                              (timestamp, text))
+                    logging.info(f'Dry-run {dry_run}. Inserting post from {formatted_timestamp}')
+                    if not dry_run:
+                        c.execute('INSERT INTO fb_posts (id, text) VALUES (?, ?)',
+                                  (timestamp, text))
                     self._conn.commit()
                 except sqlite3.IntegrityError:
                     logging.warning(
                         f'Post from {formatted_timestamp} already exists')
 
-        logging.info(f'Loaded {i} posts')
+        logging.info(f'Loaded {posts_count} posts, {media_count} media files')
 
     def collect_stat(self):
         c = self._conn.cursor()

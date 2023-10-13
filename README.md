@@ -2,15 +2,16 @@
 _This repo is a reference clone of the original private docker image repo, which uses self-hosted GitHub Actions runners, 
 disabled for public repos._
 
-Simple script to migrate some social network post dumps to Mastodon
+Simple script to migrate social networks post dumps to Mastodon
+Currentli supported networks:
+- Facebook
 
 # Introduction
 
 Mastodon doesn't provide any content migration tool. The explanation is - developers wouldn't like to overload the
-Fediverse with traffic of imported content. I appreciate this decision,it makes logical sense. However, the migration
-may
-be useful for particular cases. For example, I would like to move a historical archive of my content from FB&X to my
-own, self-hosted Mastodon instance-based dedicated accounts.
+Fediverse with traffic of imported content. I appreciate this decision, it makes logical sense. However, the migration
+may be useful for particular cases. For example, I would like to move a historical archive of my content from Facebook
+and Twitter to my own, self-hosted Mastodon instance-based dedicated accounts.
 
 # Features
 
@@ -45,7 +46,13 @@ prompted
 | MASTODON_PUSH_PUBLIC         |                    0 |
 | DB_FILE                      | /app/db/evacuator.db |
 
-## Docker container commands
+## Important notes
+
+Because of uncertainty of source data, and different visibility models, the script uploads all posts with "Public" or "
+Followers only" visibility. The default is "followers only". You can change this behaviour setting MASTODON_PUSH_PUBLIC
+variable into '1'.
+
+## Docker container commands ans options
 
 You need to run commands to load the archive into the internal db and push it to Mastodon
 Internal db is used to provide the command reentrancy. You can run the command multiple times in case of errors or
@@ -58,6 +65,8 @@ For FB the post timestamp is used as a unique key.
 | load facebook            | loads FB archive into internal database |
 | push facebook            | pushes FB archive to Mastodon           |
 | load report, push report | prints the current process state        |
+
+**Dry-run mode is default behaviour for all commands. To run the command in the real mode, add --no-dry-run option**
 
 # Usage
 
@@ -72,6 +81,7 @@ docker run --rm -ti -v <path to fb backup posts folder>/posts:/app/posts -v <pat
 ```shell
 docker run --rm -ti -v ./tests/testdata/posts:/app/posts -v ./db:/app/db mdefenders/mevac:latest load facebook
 ````
+
 ```
 INFO:root:Facebook post file: your_posts_2421432.json
 WARNING:root:Post from 07-09-2014 11:45:14 has more than 4 attachments, trimmed to 4
@@ -96,6 +106,7 @@ INFO:root:Loaded 20 posts
 ```shell
 docker run --rm -ti  -v ./db/:/app/db mdefenders/mevac:latest load report
 ````
+
 ```
  FB Posts   |   Count
 ------------+---------
@@ -114,6 +125,7 @@ docker run --rm -ti  -v ./db/:/app/db mdefenders/mevac:latest load report
 ```shell
 docker run --rm -ti -v ./tests/testdata/posts:/app/posts -v ./db:/app/db mdefenders/mevac:latest push facebook
 ````
+
 ```
  FB Posts   |   Count
 ------------+---------
@@ -126,3 +138,16 @@ docker run --rm -ti -v ./tests/testdata/posts:/app/posts -v ./db:/app/db mdefend
  Imported   |      10
  Pushed     |      10
 ```
+
+# Changelog
+
+## 0.0.2
+
+- dry-run mode added as default
+
+# Backlog
+
+- Tests on CI
+- import progress
+- X migration
+- Mastodon migration

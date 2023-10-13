@@ -28,18 +28,18 @@ class TestMastodon(unittest.TestCase):
     def test_post_status(self):
         media_post_ids = list()
         for i in range(5):
-            media_post_id = self.mst.upload_media('testdata/stephenxxx05.jpg')
+            media_post_id = self.mst.upload_media('testdata/stephenxxx05.jpg', dry_run=False)
             self.assertIsInstance(int(media_post_id), int)
             media_post_ids.append(media_post_id)
 
-        post_ids = self.mst.post_status('Integration Private test', media_post_ids)
+        post_ids = self.mst.post_status('Integration Private test', media_post_ids, dry_run=False)
         self.assertNotEqual(len(post_ids), 0)
         for post_id in post_ids:
             deleted_post_id = self.mst.delete_entity(post_id)
             self.assertEqual(post_id, deleted_post_id)
 
     def test_hidden_post(self):
-        post_ids = self.mst.post_status('Integration Private test', private=True)
+        post_ids = self.mst.post_status('Integration Private test', private=True, dry_run=False)
         for post_id in post_ids:
             deleted_post_id = self.mst.delete_entity(post_id)
             self.assertEqual(post_id, deleted_post_id)

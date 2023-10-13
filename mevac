@@ -15,6 +15,7 @@ def main():
     parser = argparse.ArgumentParser(description='Import data from social media platforms.')
     parser.add_argument('operation', choices=['load', 'push'], type=str, help='Command to execute')
     parser.add_argument('type', choices=['facebook', 'twitter', 'report'], type=str, help='Data type')
+    parser.add_argument('--no-dry-run', action='store_true', help='Disable dry run mode')
 
     args = parser.parse_args()
     load_env = LoadEnv()
@@ -23,7 +24,7 @@ def main():
     if args.operation == "load":
 
         if args.type == "facebook":
-            importer.load_fb_posts()
+            importer.load_fb_posts(not args.no_dry_run)
         elif args.type == "twitter":
             pass
         elif args.type == "report":
@@ -33,7 +34,7 @@ def main():
         if args.type == "facebook":
             push_env = PushEnv()
             pusher = Pusher(load_env, push_env)
-            pusher.push_fb_posts()
+            pusher.push_fb_posts(not args.no_dry_run)
         elif args.type == "twitter":
             pass
         elif args.type == "report":

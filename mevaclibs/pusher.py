@@ -16,7 +16,7 @@ class Pusher:
         if not path.exists(self._load_env.fb_posts_dir):
             raise Exception(f'Facebook posts dir {self._load_env.fb_posts_dir} does not exist')
 
-    def push_fb_posts(self):
+    def push_fb_posts(self, dry_run=True):
         c = self._conn.cursor()
         c.execute('SELECT * FROM fb_posts WHERE posted ==0')
         fb_posts = c.fetchall()
@@ -28,15 +28,15 @@ class Pusher:
             fb_medias = c.fetchall()
             for fb_media in fb_medias:
                 media_file = f'{self._load_env.fb_posts_dir}/{fb_media[2]}'
-                logging.info(f'Posting media {media_file}')
-                media_post_id = self._mst.upload_media(media_file)
+                logging.info(f'Dry-run {dry_run}. Posting media {media_file}')
+                media_post_id = self._mst.upload_media(media_file, dry_run)
                 media_post_ids.append(media_post_id)
                 c.execute('UPDATE fb_media SET posted = ? WHERE id = ?', (media_post_id, fb_media[0],))
                 self._conn.commit()
-            logging.info(f'Posting post from {formatted_timestamp}')
+            logging.info(f'Dry-run {dry_run}. Posting toot from {formatted_timestamp}')
             if fb_post[1] != '' or media_post_ids:
                 post_id = self._mst.post_status(f'{formatted_timestamp}\r{fb_post[1]}', media_post_ids,
-                                                private=self._push_env.push_private)
+                                                private=self._push_env.push_private, dry_run=dry_run)
                 c.execute('UPDATE fb_posts SET posted = ? WHERE id = ?', (post_id[0], fb_post[0],))
                 self._conn.commit()
                 result = result + post_id
