@@ -44,6 +44,8 @@ class Mastodon:
                         payload['in_reply_to_id'] = in_reply_to_id
                     if not dry_run:
                         result = requests.post(endpoint, headers=self._headers, json=payload)
+                        self._update_rate_limits(result)
+                        result.raise_for_status()
                 elif item_type == 'media':
                     endpoint = f'{self._endpoint}/api/v2/media'
                     if not dry_run:
