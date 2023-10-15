@@ -97,6 +97,8 @@ class Importer:
         self._env.stat_fb_posts.append(['Imported', result[0]])
         result = c.execute('SELECT COUNT (*) FROM fb_posts WHERE posted != 0').fetchone()
         self._env.stat_fb_posts.append(['Pushed', result[0]])
+        result = c.execute('SELECT COUNT (*) FROM fb_posts WHERE posted == 2').fetchone()
+        self._env.stat_fb_posts.append(['Partially pushed', result[0]])
         result = c.execute('SELECT COUNT (*) FROM fb_posts WHERE length(text) > 500').fetchone()
         self._env.stat_fb_posts.append(['Long posts', result[0]])
         result = c.execute('SELECT COUNT (*) FROM fb_media').fetchone()

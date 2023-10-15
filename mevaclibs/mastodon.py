@@ -59,9 +59,13 @@ class Mastodon:
             except HTTPError as exc:
                 code = exc.response.status_code
                 if code == HTTPStatus.TOO_MANY_REQUESTS:
-                    logging.warning(f'API rate-limit exceeded. Sleeping for: {self._env.ratelimit_reset} sec')
+                    logging.warning(f'API rate-limit exceeded. Sleeping for: '
+                                    f'{datetime.timedelta(seconds=self._env.ratelimit_reset)} sec')
                     time.sleep(self._env.ratelimit_reset)
                     continue
+                elif code == HTTPStatus.UNPROCESSABLE_ENTITY:
+                    logging.error(f'Client Error: Unprocessable Entity for {item_type}, {data}, {media_ids}. Skipping')
+                    return '0'
                 raise
         if dry_run:
             return '0'
@@ -126,7 +130,8 @@ class Mastodon:
             except HTTPError as exc:
                 code = exc.response.status_code
                 if code == HTTPStatus.TOO_MANY_REQUESTS:
-                    logging.warning(f'API rate-limit exceeded. Sleeping for: {self._env.ratelimit_reset} sec')
+                    logging.warning(f'API rate-limit exceeded. Sleeping for: '
+                                    f'{datetime.timedelta(seconds=self._env.ratelimit_reset)} sec')
                     time.sleep(self._env.ratelimit_reset)
                     continue
                 raise

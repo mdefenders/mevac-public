@@ -66,7 +66,7 @@ For FB the post timestamp is used as a unique key.
 | push facebook            | pushes FB archive to Mastodon           |
 | load report, push report | prints the current process state        |
 
-**Dry-run mode is default behaviour for all commands. To run the command in the real mode, add --no-dry-run option**
+**IMPORTANT: Dry-run mode is default behaviour for all commands. To run the command in the real mode, add --no-dry-run option**
 
 # Usage
 
@@ -141,6 +141,13 @@ docker run --rm -ti -v ./tests/testdata/posts:/app/posts -v ./db:/app/db mdefend
 
 # Changelog
 
+## 0.0.4
+- Pass 422 error on push
+- Extended error handling and logging
+- Some progress logging
+
+## 0.0.3
+hotfix release
 ## 0.0.2
 
 - dry-run mode added as default

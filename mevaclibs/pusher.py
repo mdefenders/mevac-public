@@ -18,6 +18,9 @@ class Pusher:
 
     def push_fb_posts(self, dry_run=True):
         c = self._conn.cursor()
+        c.execute('SELECT count(*) FROM fb_posts WHERE posted ==0')
+        fb_posts_count = c.fetchone()[0]
+        fb_post_posted = 1
         c.execute('SELECT * FROM fb_posts WHERE posted ==0')
         fb_posts = c.fetchall()
         result = list()
@@ -33,11 +36,19 @@ class Pusher:
                 media_post_ids.append(media_post_id)
                 c.execute('UPDATE fb_media SET posted = ? WHERE id = ?', (media_post_id, fb_media[0],))
                 self._conn.commit()
-            logging.info(f'Dry-run {dry_run}. Posting toot from {formatted_timestamp}')
+            logging.info(f'Dry-run {dry_run}. {fb_post_posted}/{fb_posts_count} '
+                         f'Posting toot from {formatted_timestamp}: {fb_post[1][:20]}')
             if fb_post[1] != '' or media_post_ids:
-                post_id = self._mst.post_status(f'{formatted_timestamp}\r{fb_post[1]}', media_post_ids,
-                                                private=self._push_env.push_private, dry_run=dry_run)
-                c.execute('UPDATE fb_posts SET posted = ? WHERE id = ?', (post_id[0], fb_post[0],))
+                post_ids = self._mst.post_status(f'{formatted_timestamp}\r{fb_post[1]}', media_post_ids,
+                                                 private=self._push_env.push_private, dry_run=dry_run)
+                result_post_id = post_ids[0]
+                for post_id in post_ids:
+                    if post_id == '0':
+                        # to mark the post as partially posted if one of the parts failed
+                        result_post_id = '2'
+                        break
+                c.execute('UPDATE fb_posts SET posted = ? WHERE id = ?', (result_post_id, fb_post[0],))
                 self._conn.commit()
-                result = result + post_id
+                result = result + post_ids
+                fb_post_posted += 1
         return result
