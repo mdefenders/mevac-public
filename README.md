@@ -3,7 +3,8 @@ _This repo is a reference clone of the original private docker image repo, which
 disabled for public repos._
 
 Simple script to migrate social networks post dumps to Mastodon
-Currentli supported networks:
+
+Currently supported networks:
 
 - Facebook
 
