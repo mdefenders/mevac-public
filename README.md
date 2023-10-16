@@ -90,7 +90,7 @@ replays and other types of content are ignored.
 
 # Expected runtime
 
-As Mastodon API calls are restricted by sophisticated calculated and not configurable rate limits, the script may
+As Mastodon API calls are restricted by sophisticatedly calculated and not configurable rate limits, the script may
 take a long time to complete. From the practical experience, importing 4k posts/1k media attachments archive takes about
 3 days because of the rate-limit bottleneck.
 
