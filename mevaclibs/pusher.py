@@ -16,23 +16,32 @@ class Pusher:
         if not path.exists(self._load_env.fb_posts_dir):
             raise Exception(f'Facebook posts dir {self._load_env.fb_posts_dir} does not exist')
 
-    def push_fb_posts(self, dry_run=True):
+    def push_fb_posts(self, dry_run=True, retry=False):
         c = self._conn.cursor()
-        c.execute('SELECT count(*) FROM fb_posts WHERE posted ==0')
+        if retry:
+            post_condition = '2'
+            media_condition = 'AND posted != 0'
+        else:
+            post_condition = '0'
+            media_condition = 'AND posted = 0'
+        c.execute('SELECT count(*) FROM fb_posts WHERE posted = ?', (post_condition,))
         fb_posts_count = c.fetchone()[0]
         fb_post_posted = 1
-        c.execute('SELECT * FROM fb_posts WHERE posted ==0')
+        c.execute('SELECT * FROM fb_posts WHERE posted = ?', (post_condition,))
         fb_posts = c.fetchall()
         result = list()
         for fb_post in fb_posts:
             media_post_ids = list()
             formatted_timestamp = strftime("%d-%m-%Y %H:%M:%S", localtime(fb_post[0]))
-            c.execute('SELECT * FROM fb_media WHERE post_id = ? AND posted == 0', (fb_post[0],))
+            c.execute(f'SELECT * FROM fb_media WHERE post_id = ? {media_condition}', (fb_post[0],))
             fb_medias = c.fetchall()
             for fb_media in fb_medias:
                 media_file = f'{self._load_env.fb_posts_dir}/{fb_media[2]}'
-                logging.info(f'Dry-run {dry_run}. Posting media {media_file}')
-                media_post_id = self._mst.upload_media(media_file, dry_run)
+                if fb_media[3] == 0:
+                    logging.info(f'Dry-run {dry_run}. Posting media {media_file}')
+                    media_post_id = self._mst.upload_media(media_file, dry_run)
+                else:
+                    media_post_id = fb_media[3]
                 media_post_ids.append(media_post_id)
                 c.execute('UPDATE fb_media SET posted = ? WHERE id = ?', (media_post_id, fb_media[0],))
                 self._conn.commit()

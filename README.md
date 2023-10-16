@@ -4,6 +4,7 @@ disabled for public repos._
 
 Simple script to migrate social networks post dumps to Mastodon
 Currentli supported networks:
+
 - Facebook
 
 # Introduction
@@ -44,6 +45,8 @@ prompted
 | MASTODON_TEXT_SIZE_LIMIT     |                  500 |
 | MASTODON_WORK_DIR            |                   ./ |
 | MASTODON_PUSH_PUBLIC         |                    0 |
+| MASTODON_MEDIA_TIMEOUT       |                   10 |
+| MASTODON_MEDIA_RETRIES       |                    3 |
 | DB_FILE                      | /app/db/evacuator.db |
 
 ## Important notes
@@ -52,7 +55,7 @@ Because of uncertainty of source data, and different visibility models, the scri
 Followers only" visibility. The default is "followers only". You can change this behaviour setting MASTODON_PUSH_PUBLIC
 variable into '1'.
 
-## Docker container commands ans options
+## Docker container commands and options
 
 You need to run commands to load the archive into the internal db and push it to Mastodon
 Internal db is used to provide the command reentrancy. You can run the command multiple times in case of errors or
@@ -66,7 +69,29 @@ For FB the post timestamp is used as a unique key.
 | push facebook            | pushes FB archive to Mastodon           |
 | load report, push report | prints the current process state        |
 
-**IMPORTANT: Dry-run mode is default behaviour for all commands. To run the command in the real mode, add --no-dry-run option**
+**IMPORTANT: Dry-run mode is default behaviour for all commands. To run the command in the real mode, add --no-dry-run
+option**
+
+# Large media processing notes
+
+Processing large media files takes a time from Mastodon server, so they cannot be used immediately with the new post.
+The scripts waits for MASTODON_MEDIA_TIMEOUT*MASTODON_MEDIA_RETRIES seconds for the media to be processed.
+If the media isn't ready, post cam be skipped by the server. You can see in post push report the count of "Partially
+pushed" posts. You can run the push command again with "--retry" option to re-push the skipped posts. As Mastodon
+doesn't provide an option to push posts in the past, the script will push the post on top of your timeline.
+
+# Limitations
+
+## Facebook
+
+The script imports only posts, contains text, media attachments or external links. Albums, internal Facebook reposts,
+replays and other types of content are ignored.
+
+# Expected runtime
+
+As Mastodon API calls are restricted by sophisticated calculated and not configurable rate limits, the script may
+take a long time to complete. From the practical experience, importing 4k posts/1k media attachments archive takes about
+3 days because of the rate-limit bottleneck.
 
 # Usage
 
@@ -141,13 +166,20 @@ docker run --rm -ti -v ./tests/testdata/posts:/app/posts -v ./db:/app/db mdefend
 
 # Changelog
 
-## 0.0.4
+## 0.0.5
+
 - Pass 422 error on push
 - Extended error handling and logging
 - Some progress logging
 
-## 0.0.3
+## 0.0.4
+
 hotfix release
+
+## 0.0.3
+
+hotfix release
+
 ## 0.0.2
 
 - dry-run mode added as default

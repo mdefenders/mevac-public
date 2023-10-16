@@ -52,6 +52,8 @@ class PushEnv(object):
         self._ratelimit_retries = int(os.environ.get('MASTODON_RATELIMIT_RETRIES', '3'))
         self._text_size_limit = int(os.environ.get('MASTODON_TEXT_SIZE_LIMIT', '500'))
         self._push_private = os.environ.get('MASTODON_PUSH_PRIVATE', '1')
+        self._media_timeout = os.environ.get('MASTODON_MEDIA_TIMEOUT', '10')
+        self._media_retries = os.environ.get('MASTODON_MEDIA_RETRIES', '3')
         if self._text_size_limit < 20:
             self._text_size_limit = 500
         self._ratelimit_limit = 0
@@ -70,6 +72,14 @@ class PushEnv(object):
     @property
     def domain(self):
         return self._env['domain']
+
+    @property
+    def media_timeout(self):
+        return int(self._media_timeout)
+
+    @property
+    def media_retries(self):
+        return int(self._media_retries)
 
     @property
     def push_private(self):

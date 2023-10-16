@@ -16,6 +16,7 @@ def main():
     parser.add_argument('operation', choices=['load', 'push'], type=str, help='Command to execute')
     parser.add_argument('type', choices=['facebook', 'twitter', 'report'], type=str, help='Data type')
     parser.add_argument('--no-dry-run', action='store_true', help='Disable dry run mode')
+    parser.add_argument('--retry', action='store_true', help='Retry skipped posts')
 
     args = parser.parse_args()
     load_env = LoadEnv()
@@ -34,7 +35,7 @@ def main():
         if args.type == "facebook":
             push_env = PushEnv()
             pusher = Pusher(load_env, push_env)
-            pusher.push_fb_posts(not args.no_dry_run)
+            pusher.push_fb_posts(not args.no_dry_run, args.retry)
         elif args.type == "twitter":
             pass
         elif args.type == "report":
