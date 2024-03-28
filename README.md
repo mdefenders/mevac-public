@@ -50,9 +50,13 @@ prompted.
 
 ## Important notes
 
+### Facebook import
 Due to the variability of source data and different visibility models, the script uploads all Facebook posts with a
 visibility setting configured by MASTODON_PUSH_VISIBILITY. The supported visibility settings are public, private, and
-direct. The default setting is "private". In some cases, responses may not contain any reply sign, except for starting
+direct. The default setting is "private". 
+
+### Mastodon import
+In some cases, responses may not contain any reply sign, except for starting
 with an @mention. By default, these types of posts are excluded by the script. If you wish to include these in the
 import, set the FILTER_OUT_AT variable to False.
 
