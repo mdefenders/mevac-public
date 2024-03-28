@@ -54,7 +54,8 @@ prompted.
 ### General
 
 The script uses SQLite as an internal database to store the imported posts. It allows re-running the push command in
-case of errors or failures without duplicates. The database file is mounted into the /app/db folder inside the container.
+case of errors or failures without duplicates. The database file is mounted into the /app/db folder inside the
+container.
 
 ### Facebook import
 
@@ -120,6 +121,11 @@ experience, importing an archive of 4k posts/1k media attachments takes about 3 
 docker run --rm -ti -v <path to fb backup posts folder>/posts:/app/posts -v <path to local db folder>:/app/db mdefenders/mevac:latest command
 ```
 
+**_Important:_** default backup sub-folders under the /app workdir are ./posts for the Facebook backup and ./mstposts
+for the Mastodon backup.
+You can change sub-folders name by setting FB_POSTS_DIR and MST_POSTS_DIR if needed. Root folder (/app) isn't
+configurable so far.
+
 ## Examples
 
 ### Load posts to the internal database
@@ -166,7 +172,7 @@ docker run --rm -ti  -v ./db/:/app/db mdefenders/mevac:latest load report
  Pushed     |       0
 ```
 
-### Push posts to Facebook
+### Push Facebook posts to Mastodon
 
 ```shell
 docker run --rm -ti -v ./tests/testdata/posts:/app/posts -v ./db:/app/db mdefenders/mevac:latest push facebook
