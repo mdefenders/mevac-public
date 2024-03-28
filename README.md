@@ -9,7 +9,8 @@ Currently, the script supports the following networks:
 
 # Introduction
 
-Mastodon does not offer a built-in content migration (import) tool. This is because developers want to avoid overloading the
+Mastodon does not offer a built-in content migration (import) tool. This is because developers want to avoid overloading
+the
 Fediverse with imported content traffic. While this decision is understandable, there are certain scenarios where
 migration could be beneficial. For instance, one might want to transfer a historical archive of content from Facebook
 and Twitter to dedicated accounts on a self-hosted Mastodon instance.
@@ -107,7 +108,7 @@ replays and other types of content are ignored.
 
 ## Mastodon
 
-The script imports only posts, and own reply threads. Polls, boosts, starts replies to other users are ignored.
+The script imports only posts, and own reply threads. Polls, boosts, stars, replies to other users are ignored.
 Posts and replies, started with @mentions may be missed.
 
 # Expected runtime
