@@ -1,47 +1,67 @@
 #!/usr/bin/env python3
 import logging
 import os
-from mevaclibs.envs import LoadEnv, PushEnv
-from mevaclibs.importer import Importer
-from mevaclibs.pusher import Pusher
+import signal
 import argparse
+from mevaclibs.envs import LoadEnv, PushEnv
+from mevaclibs.importers import FbImporter, MstImporter
+from mevaclibs.pusher import Pusher
+
+
+def signal_handler(sig, frame):
+    logging.info('Exiting...')
+    exit(0)
 
 
 def main():
-    logging.basicConfig(
-        level=os.environ.get('LOGLEVEL', 'INFO').upper()
-    )
+    signal.signal(signal.SIGINT, signal_handler)
+    logging.basicConfig(level=os.environ.get('LOGLEVEL', 'INFO').upper())
 
     parser = argparse.ArgumentParser(description='Import data from social media platforms.')
-    parser.add_argument('operation', choices=['load', 'push'], type=str, help='Command to execute')
-    parser.add_argument('type', choices=['facebook', 'twitter', 'report'], type=str, help='Data type')
+    parser.add_argument('operation', choices=['load', 'push', 'report'], type=str, help='Command to execute')
+    parser.add_argument('type', choices=['facebook', 'twitter', 'mastodon'], type=str, help='Data type')
     parser.add_argument('--no-dry-run', action='store_true', help='Disable dry run mode')
     parser.add_argument('--retry', action='store_true', help='Retry skipped posts')
 
     args = parser.parse_args()
     load_env = LoadEnv()
-    importer = Importer(load_env)
+
+    importer = None
 
     if args.operation == "load":
 
         if args.type == "facebook":
+            importer = FbImporter(load_env)
             importer.load_fb_posts(not args.no_dry_run)
+            importer.collect_stat()
+            importer.print_stat()
+        elif args.type == "twitter":
+            pass
+        elif args.type == "mastodon":
+            importer = MstImporter(load_env)
+            importer.load_mst_posts(not args.no_dry_run)
+            importer.collect_stat()
+            importer.print_stat()
+
+    elif args.operation == "push":
+        push_env = PushEnv()
+        pusher = Pusher(load_env, push_env)
+        if args.type == "facebook":
+            pusher.push_fb_posts(not args.no_dry_run, args.retry)
+        elif args.type == "mastodon":
+            pusher.push_mst_posts('0', '0', not args.no_dry_run, args.retry)
         elif args.type == "twitter":
             pass
         elif args.type == "report":
             pass
 
-    if args.operation == "push":
+    elif args.operation == "report":
         if args.type == "facebook":
-            push_env = PushEnv()
-            pusher = Pusher(load_env, push_env)
-            pusher.push_fb_posts(not args.no_dry_run, args.retry)
-        elif args.type == "twitter":
-            pass
-        elif args.type == "report":
-            pass
-    importer.collect_stat()
-    importer.print_stat()
+            importer = FbImporter(load_env)
+        elif args.type == "mastodon":
+            importer = MstImporter(load_env)
+        importer.collect_stat()
+        importer.print_stat()
 
 
 if __name__ == '__main__':

@@ -1,84 +1,89 @@
 # mEvac
-_This repo is a reference clone of the original private docker image repo, which uses self-hosted GitHub Actions runners, 
-disabled for public repos._
 
-Simple script to migrate social networks post dumps to Mastodon
-Currentli supported networks:
+This is a simple script designed to migrate (import) social network post backups to Mastodon account.
+Currently, the script supports the following networks:
 
 - Facebook
+- Mastodon
 
 # Introduction
 
-Mastodon doesn't provide any content migration tool. The explanation is - developers wouldn't like to overload the
-Fediverse with traffic of imported content. I appreciate this decision, it makes logical sense. However, the migration
-may be useful for particular cases. For example, I would like to move a historical archive of my content from Facebook
-and Twitter to my own, self-hosted Mastodon instance-based dedicated accounts.
+Mastodon does not offer a built-in content migration (import) tool. This is because developers want to avoid overloading the
+Fediverse with imported content traffic. While this decision is understandable, there are certain scenarios where
+migration could be beneficial. For instance, one might want to transfer a historical archive of content from Facebook
+and Twitter to dedicated accounts on a self-hosted Mastodon instance.
 
 # Features
 
-- built as a docker image
-- FB posts migration
-- FB posts timestamping and auto-threading
-
-# Backlog
-
-- X migration
-- Mastodon migration
+- Migration of Mastodon post archives
+- Migration of Facebook post archives
+- Timestamping and auto-threading of Facebook posts
+- Provided as a docker image
 
 # Requirements
 
-- docker installed
-- mastodon account and access token (may be created using Mastodon UI)
-- Downloaded FB backup (archive)
+- Docker installed
+- Mastodon account and access token (can be created using Mastodon UI)
+- Downloaded Facebook backup (archive)
+- Downloaded Mastodon backup (archive)
 
-# Variables/parameters
+# Configuration
 
-The default script behaviour may be configured using environment variables. Variables without default values are
-prompted
+The script's default behavior can be adjusted using environment variables. Variables without default values will be
+prompted.
 
-| Env var                      |        Default value |   
-|:-----------------------------|---------------------:|
-| LOGLEVEL                     |                 INFO |
-| MASTODON_DOMAIN              |                    - |
-| MASTODON_RATELIMIT_RETRIES   |                    3 |
-| MASTODON_CLIENT_ACCESS_TOKEN |                    - |
-| MASTODON_TEXT_SIZE_LIMIT     |                  500 |
-| MASTODON_WORK_DIR            |                   ./ |
-| MASTODON_PUSH_PUBLIC         |                    0 |
-| MASTODON_MEDIA_TIMEOUT       |                   10 |
-| MASTODON_MEDIA_RETRIES       |                    3 |
-| DB_FILE                      | /app/db/evacuator.db |
+| Env var                      | Description                                        |        Default value |   
+|:-----------------------------|----------------------------------------------------|---------------------:|
+| LOGLEVEL                     | Logging level                                      |                 INFO |
+| MASTODON_DOMAIN              | Mastodon server FQDN                               |                    - |
+| MASTODON_RATELIMIT_RETRIES   | Retries on ratelimit                               |                    3 |
+| MASTODON_CLIENT_ACCESS_TOKEN | Client access token                                |                    - |
+| MASTODON_TEXT_SIZE_LIMIT     | Post text size limit                               |                  500 |
+| FB_POSTS_DIR                 | Fb backup directory  (contains xxx_posts_nnn.json) |              ./posts |
+| MST_POSTS_DIR                | Mastodon backup directory (contains outbox.json)   |           ./mstposts |
+| MASTODON_VISIBILITY          | Fb posts visibility                                |              private |
+| MASTODON_MEDIA_TIMEOUT       | Wait for media upload                              |                   10 |
+| MASTODON_MEDIA_RETRIES       | Media upload retries                               |                    3 |
+| MASTODON_DATE_TAGS           | Add date tags to the post                          |                 True |
+| DB_FILE                      | SQLite DB path                                     | /app/db/evacuator.db |
+| FILTER_OUT_AT                | Filter out post, started with @mentions            |                 True |
 
 ## Important notes
 
-Because of uncertainty of source data, and different visibility models, the script uploads all posts with "Public" or "
-Followers only" visibility. The default is "followers only". You can change this behaviour setting MASTODON_PUSH_PUBLIC
-variable into '1'.
+Due to the variability of source data and different visibility models, the script uploads all Facebook posts with a
+visibility setting configured by MASTODON_PUSH_VISIBILITY. The supported visibility settings are public, private, and
+direct. The default setting is "private". In some cases, responses may not contain any reply sign, except for starting
+with an @mention. By default, these types of posts are excluded by the script. If you wish to include these in the
+import, set the FILTER_OUT_AT variable to False.
 
 ## Docker container commands and options
 
-You need to run commands to load the archive into the internal db and push it to Mastodon
-Internal db is used to provide the command reentrancy. You can run the command multiple times in case of errors or
-failures and avoid duplicates. Removing the db file will reset the process.
+Commands are required to load the archive into the internal database and push it to Mastodon. The internal database is
+used to provide command reentrancy. You can run the command multiple times in case of errors or failures and avoid
+duplicates. Removing the database file will reset the process.
 
-For FB the post timestamp is used as a unique key.
+For Facebook, the post timestamp is used as a unique key.
+For Mastodian, the post ID is used as a unique key.
 
-| Command                  | Description                             |   
-|:-------------------------|:----------------------------------------|
-| load facebook            | loads FB archive into internal database |
-| push facebook            | pushes FB archive to Mastodon           |
-| load report, push report | prints the current process state        |
+| Command         | Description                                   |   
+|:----------------|:----------------------------------------------|
+| load facebook   | loads FB archive into internal database       |
+| push facebook   | pushes FB archive to Mastodon                 |
+| load mastodon   | loads Mastodon archive into internal database |
+| push mastodon   | pushes Mastodon archive to Mastodon           |
+| report facebook | prints facebook report                        |
+| report mastodon | prints mastodon report                        |
 
 **IMPORTANT: Dry-run mode is default behaviour for all commands. To run the command in the real mode, add --no-dry-run
 option**
 
 # Large media processing notes
 
-Processing large media files takes a time from Mastodon server, so they cannot be used immediately with the new post.
-The scripts waits for MASTODON_MEDIA_TIMEOUT*MASTODON_MEDIA_RETRIES seconds for the media to be processed.
-If the media isn't ready, post cam be skipped by the server. You can see in post push report the count of "Partially
-pushed" posts. You can run the push command again with "--retry" option to re-push the skipped posts. As Mastodon
-doesn't provide an option to push posts in the past, the script will push the post on top of your timeline.
+Processing large media files takes time from the Mastodon server, so they cannot be used immediately with the new post.
+The script waits for MASTODON_MEDIA_TIMEOUT * MASTODON_MEDIA_RETRIES seconds for the media to be processed. If the media
+isn't ready, the post can be skipped by the server. You can see in the post push report the count of "Partially pushed"
+posts. You can run the push command again with the "--retry" option to re-push the skipped posts. As Mastodon doesn't
+provide an option to push posts in the past, the script will push the post on top of your timeline.
 
 # Limitations
 
@@ -87,11 +92,15 @@ doesn't provide an option to push posts in the past, the script will push the po
 The script imports only posts, contains text, media attachments or external links. Albums, internal Facebook reposts,
 replays and other types of content are ignored.
 
+## Mastodon
+
+The script imports only posts, and own reply threads. Polls, boosts, starts replies to other users are ignored.
+Posts and replies, started with @mentions may be missed.
+
 # Expected runtime
 
-As Mastodon API calls are restricted by sophisticated calculated and not configurable rate limits, the script may
-take a long time to complete. From the practical experience, importing 4k posts/1k media attachments archive takes about
-3 days because of the rate-limit bottleneck.
+Due to the rate limits imposed on Mastodon API calls, the script may take a long time to complete. From practical
+experience, importing an archive of 4k posts/1k media attachments takes about 3 days due to the rate-limit bottleneck.
 
 # Usage
 
@@ -145,7 +154,7 @@ docker run --rm -ti  -v ./db/:/app/db mdefenders/mevac:latest load report
  Pushed     |       0
 ```
 
-### Push posts to Mastodon
+### Push posts to Facebook
 
 ```shell
 docker run --rm -ti -v ./tests/testdata/posts:/app/posts -v ./db:/app/db mdefenders/mevac:latest push facebook
@@ -165,6 +174,10 @@ docker run --rm -ti -v ./tests/testdata/posts:/app/posts -v ./db:/app/db mdefend
 ```
 
 # Changelog
+
+## 0.0.6
+
+- Mastodon import added
 
 ## 0.0.5
 
@@ -189,4 +202,3 @@ hotfix release
 - Tests on CI
 - import progress
 - X migration
-- Mastodon migration
